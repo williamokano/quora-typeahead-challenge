@@ -111,7 +111,11 @@ namespace TypeaheadSearch
                 }
             }
         }
-
+        
+        /// <summary>
+        /// Resolves the issue #1
+        /// </summary>
+        /// <param name="strLine"></param>
         public void ParseWQuery(string strLine)
         {
             Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+((?:\\w+:\\d+\\.\\d+\\s+)*)(.*)");
