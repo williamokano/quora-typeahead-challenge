@@ -46,14 +46,15 @@ namespace TypeaheadSearch
         {
             int numberOfInputs = 0;
             string tempLine = string.Empty;
-            StreamReader input = GetInputStream();
+            IList<string> inputs = new List<string>();
+            //StreamReader input = GetInputStream();
 
             //Start the items list to avoid nullpointers
             this.items = new Dictionary<string, Item>();
             this.tree = new QuickTree();
 
             //The first line from the reader is how many inputs will have
-            tempLine = input.ReadLine();
+            tempLine = Console.ReadLine();
             if (!Int32.TryParse(tempLine, out numberOfInputs))
             {
                 Console.WriteLine("Wrong input format!");
@@ -62,7 +63,12 @@ namespace TypeaheadSearch
 
             for (int i = 0; i < numberOfInputs; i++)
             {
-                this.Parse(input.ReadLine());
+                inputs.Add(Console.ReadLine());
+            }
+
+            for (int i = 0; i < numberOfInputs; i++)
+            {
+                this.Parse(inputs[i]);
             }
 
         }
@@ -274,6 +280,7 @@ namespace TypeaheadSearch
         public StreamReader GetInputStream()
         {
             //Read from the file, on production, change to stdin
+            //StreamReader sr = new StreamReader(Console.);
             StreamReader sr = new StreamReader("B:\\quora.txt");
             return sr;
         }
@@ -344,7 +351,7 @@ namespace TypeaheadSearch
         {
             //Get the item tokens to find them in the tree
             string[] tokens = document.dataString.Trim().Split(' ');
-            foreach(string token in tokens)
+            foreach (string token in tokens)
             {
                 Node tmp = Navigate(token);
                 tmp.Documents.Remove(document);
@@ -471,7 +478,7 @@ namespace TypeaheadSearch
                         iterator = currentNodeList.Where(p => p.Letter == c).FirstOrDefault();
                     }
 
-                    if(iterator == null)
+                    if (iterator == null)
                     {
                         return null;
                     }
@@ -481,7 +488,7 @@ namespace TypeaheadSearch
 
                 return iterator;
             }
-            
+
             return null;
         }
 
