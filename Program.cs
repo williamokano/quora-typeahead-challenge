@@ -112,7 +112,6 @@ namespace TypeaheadSearch
             }
         }
 
-        // @TODO: have to do yet
         public void ParseWQuery(string strLine)
         {
             Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+((?:\\w+:\\d+\\.\\d+\\s+)*)(.*)");
