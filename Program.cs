@@ -112,6 +112,12 @@ namespace TypeaheadSearch
             }
         }
 
+        // @TODO: have to do yet
+        public void ParseWQuery(string strLine)
+        {
+            Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+(\\w+:\\d+\\.\\d+\\s*)*(.*)");
+        }
+
         public bool Add(Item item)
         {
             //Method to add to the data our great data structure
@@ -274,7 +280,12 @@ namespace TypeaheadSearch
             }
             else
             {
-                return null;
+                List<Item> tempList = documentsList[0];
+                for(int i = 1; i < documentsList.Count; i++)
+                {
+                    tempList = tempList.Intersect(documentsList[i]).ToList();
+                }
+                return tempList;
             }
         }
 
