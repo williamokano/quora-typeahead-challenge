@@ -73,6 +73,7 @@ namespace TypeaheadSearch
             ParseAdd(strLine);
             ParseQuery(strLine);
             ParseWQuery(strLine);
+            ParseDel(strLine);
         }
 
         public void ParseAdd(string strLine)
@@ -111,7 +112,7 @@ namespace TypeaheadSearch
                 }
             }
         }
-        
+
         /// <summary>
         /// Resolves the issue #1 //
         /// </summary>
@@ -162,6 +163,30 @@ namespace TypeaheadSearch
             }
         }
 
+        public void ParseDel(string strLine)
+        {
+            Regex regDel = new Regex("^DEL\\s+(\\w+)");
+            if (regDel.IsMatch(strLine))
+            {
+                MatchCollection results = regDel.Matches(strLine);
+                Match m = results[0];
+
+                string id = m.Groups[1].Value;
+
+                //Verify if the item exists
+                if (items[id] != null)
+                {
+                    Item i = items[id];
+
+                    //Remove references from three
+                    this.tree.Del(i);
+
+                    //Remove references from dictionary
+                    items.Remove(id);
+                }
+            }
+        }
+
         //public void ShowResults(MatchCollection results, IList<Tuple<string, decimal>> boosts = null)
         public void ShowResults(string dataString, int limit = 0, IList<Tuple<string, decimal>> boosts = null)
         {
@@ -208,7 +233,8 @@ namespace TypeaheadSearch
             }
 
             //Order and limit
-            itemResults = itemResults.OrderByDescending(item => item.score)
+            itemResults = itemResults
+                .OrderByDescending(item => item.score)
                 .ThenByDescending(item => item.id)
                 .Take(limit)
                 .ToList();
@@ -314,6 +340,17 @@ namespace TypeaheadSearch
             return false;
         }
 
+        public void Del(Item document)
+        {
+            //Get the item tokens to find them in the tree
+            string[] tokens = document.dataString.Trim().Split(' ');
+            foreach(string token in tokens)
+            {
+                Node tmp = Navigate(token);
+                tmp.Documents.Remove(document);
+            }
+        }
+
         public IList<Item> Find(string query, bool matchCase = false)
         {
             //Get the query tokens
@@ -408,6 +445,44 @@ namespace TypeaheadSearch
             }
 
             return documents;
+        }
+
+        private Node Navigate(string word, bool matchCase = false)
+        {
+            char[] chars = null;
+            Node iterator = null;
+            IList<Node> currentNodeList = null;
+
+            chars = word.ToArray<char>();
+            iterator = null;
+            currentNodeList = this.root;
+
+            if (chars.Length > 0)
+            {
+                //Navigate through the tree and get the last node
+                foreach (char c in chars)
+                {
+                    if (!matchCase)
+                    {
+                        iterator = currentNodeList.Where(p => Char.ToUpper(p.Letter) == Char.ToUpper(c)).FirstOrDefault();
+                    }
+                    else
+                    {
+                        iterator = currentNodeList.Where(p => p.Letter == c).FirstOrDefault();
+                    }
+
+                    if(iterator == null)
+                    {
+                        return null;
+                    }
+
+                    currentNodeList = iterator.Children;
+                }
+
+                return iterator;
+            }
+            
+            return null;
         }
 
         private List<Item> Intersection(List<Item> listA, List<Item> listB)
