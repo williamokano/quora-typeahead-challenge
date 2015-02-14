@@ -16,6 +16,11 @@ namespace TypeaheadSearch
         public decimal score { get; set; }
         public string dataString { get; set; }
         public bool deleted { get; set; } //This is for lazy deletion
+        public DateTime dtCreated;
+        public Item()
+        {
+            this.dtCreated = DateTime.Now;
+        }
     }
     #endregion
 
@@ -24,8 +29,9 @@ namespace TypeaheadSearch
     {
 
         #region Attributes
-        private IList<Item> items;
+        //private IList<Item> items;
         private QuickTree tree;
+        private Dictionary<string, Item> items;
         #endregion
 
         #region Start Program
@@ -43,7 +49,7 @@ namespace TypeaheadSearch
             StreamReader input = GetInputStream();
 
             //Start the items list to avoid nullpointers
-            this.items = new List<Item>();
+            this.items = new Dictionary<string, Item>();
             this.tree = new QuickTree();
 
             //The first line from the reader is how many inputs will have
@@ -66,6 +72,7 @@ namespace TypeaheadSearch
         {
             ParseAdd(strLine);
             ParseQuery(strLine);
+            ParseWQuery(strLine);
         }
 
         public void ParseAdd(string strLine)
@@ -89,25 +96,18 @@ namespace TypeaheadSearch
         {
             Regex queryPattern = new Regex("\\bQUERY\\b\\s+(\\d+)\\s+(.*)");
             int limit = 0;
-            List<string> docIds = new List<string>();
+            string dataString = string.Empty;
 
             if (queryPattern.IsMatch(strLine))
             {
                 MatchCollection results = queryPattern.Matches(strLine);
-                Match match = results[0];
+                Match m = results[0];
 
-                if (Int32.TryParse(match.Groups[1].Value, out limit))
+                if (Int32.TryParse(m.Groups[1].Value, out limit))
                 {
-                    IList<Item> items = this.tree.Find(match.Groups[2].Value)
-                        .Take(limit)
-                        .ToList();
+                    dataString = m.Groups[2].Value;
 
-                    StringBuilder sb = new StringBuilder();
-                    foreach (string strId in items.Select(item => item.id).ToList())
-                    {
-                        sb.Append(string.Format("{0} ", strId));
-                    }
-                    Console.WriteLine(sb.ToString().Trim());
+                    ShowResults(dataString, limit);
                 }
             }
         }
@@ -115,12 +115,114 @@ namespace TypeaheadSearch
         // @TODO: have to do yet
         public void ParseWQuery(string strLine)
         {
-            Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+(\\w+:\\d+\\.\\d+\\s*)*(.*)");
+            Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+((?:\\w+:\\d+\\.\\d+\\s+)*)(.*)");
+            List<Tuple<string, decimal>> boosts = null;
+            decimal tmpScoreBoost = 0.0M;
+            int boosters = 0;
+            int limit = 0;
+            string dataString = string.Empty;
+            MatchCollection results = null;
+
+            if (wQueryPatter.IsMatch(strLine))
+            {
+                //Get boosters
+                results = wQueryPatter.Matches(strLine);
+
+                if (Int32.TryParse(results[0].Groups[2].Value, out boosters))
+                {
+                    if (boosters > 0)
+                    {
+                        boosts = new List<Tuple<string, decimal>>();
+                        string[] _boosts = results[0].Groups[3].Value.Trim().Split(' ');
+                        for (int i = 0; i < boosters; i++)
+                        {
+                            string[] tmp = _boosts[i].Split(':');
+                            if (tmp.Length == 2)
+                            {
+                                if (decimal.TryParse(tmp[1], out tmpScoreBoost))
+                                {
+                                    boosts.Add(new Tuple<string, decimal>(tmp[0], tmpScoreBoost));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Match m = results[0];
+                if (Int32.TryParse(m.Groups[1].Value, out limit))
+                {
+                    dataString = m.Groups[4].Value;
+
+                    //Show results
+                    ShowResults(dataString, limit, boosts);
+                }
+            }
+        }
+
+        //public void ShowResults(MatchCollection results, IList<Tuple<string, decimal>> boosts = null)
+        public void ShowResults(string dataString, int limit = 0, IList<Tuple<string, decimal>> boosts = null)
+        {
+            IList<Item> itemResults = this.tree.Find(dataString).Select(item => new Item()
+                {
+                    dataString = item.dataString,
+                    deleted = item.deleted,
+                    id = item.id,
+                    score = item.score,
+                    type = item.type
+                }).ToList();
+
+            //.Take(limit)
+            //.ToList();
+
+            //Apply boosts
+            if (boosts != null && boosts.Count > 0)
+            {
+                if (itemResults.Count > 0)
+                {
+                    foreach (Tuple<string, decimal> boost in boosts)
+                    {
+                        switch (boost.Item1)
+                        {
+                            case "user":
+                            case "topic":
+                            case "question":
+                            case "board":
+                                foreach (Item i in itemResults.Where(item => item.type == boost.Item1))
+                                {
+                                    i.score *= boost.Item2;
+                                }
+                                break;
+                            default:
+                                Item tmpItem = itemResults.Where(item => item.id.Equals(boost.Item1)).FirstOrDefault();
+                                if (tmpItem != null)
+                                {
+                                    tmpItem.score *= boost.Item2;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+
+            //Order and limit
+            itemResults = itemResults.OrderByDescending(item => item.score)
+                .ThenByDescending(item => item.id)
+                .Take(limit)
+                .ToList();
+
+            StringBuilder sb = new StringBuilder();
+            foreach (string strId in itemResults.Select(item => item.id).ToList())
+            {
+                sb.Append(string.Format("{0} ", strId));
+            }
+
+            Console.WriteLine(sb.ToString().Trim());
         }
 
         public bool Add(Item item)
         {
             //Method to add to the data our great data structure
+            items.Add(item.id, item);
             try
             {
                 //items.Add(item);
@@ -244,11 +346,11 @@ namespace TypeaheadSearch
                         }
 
                         //When iterator is null then the word wasn't found
-                        if(iterator == null)
+                        if (iterator == null)
                         {
                             return new List<Item>();
                         }
-                        
+
                         currentNodeList = iterator.Children;
                     }
 
@@ -267,21 +369,17 @@ namespace TypeaheadSearch
             if (tokens.Count == 1)
             {
                 return documentsList[0]
-                    .OrderByDescending(item => item.score)
-                    .ThenByDescending(item => item.id)
                     .ToList();
             }
             else if (tokens.Count == 2)
             {
                 return this.Intersection(documentsList[0], documentsList[1])
-                    .OrderByDescending(item => item.score)
-                    .ThenByDescending(item => item.id)
                     .ToList();
             }
             else
             {
                 List<Item> tempList = documentsList[0];
-                for(int i = 1; i < documentsList.Count; i++)
+                for (int i = 1; i < documentsList.Count; i++)
                 {
                     tempList = tempList.Intersect(documentsList[i]).ToList();
                 }
@@ -291,7 +389,11 @@ namespace TypeaheadSearch
 
         private List<Item> GetItems(Node _root)
         {
-            List<Item> documents = _root.Documents;
+            List<Item> documents = new List<Item>();
+            foreach (Item document in _root.Documents)
+            {
+                documents.Add(document);
+            }
 
             //If I have childrens, keep going
             if (_root.Children.Count > 0)
