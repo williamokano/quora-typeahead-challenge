@@ -113,7 +113,7 @@ namespace TypeaheadSearch
         }
         
         /// <summary>
-        /// Resolves the issue #1
+        /// Resolves the issue #1 //
         /// </summary>
         /// <param name="strLine"></param>
         public void ParseWQuery(string strLine)
