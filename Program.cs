@@ -134,7 +134,7 @@ namespace TypeaheadSearch
         /// <param name="strLine"></param>
         public void ParseWQuery(string strLine)
         {
-            Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+((?:\\w+:\\d+\\.\\d+\\s+)*)(.*)");
+            Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+((?:[a-zA-Z0-9!@#$%]+:\\d+\\.\\d+\\s+)*)(.*)");
             List<Tuple<string, decimal>> boosts = null;
             decimal tmpScoreBoost = 0.0M;
             int boosters = 0;
