@@ -529,7 +529,7 @@ namespace TypeaheadSearch
         {
             char[] chars = null;
             Node iterator = null;
-            IList<Node> currentNodeList = null;
+            GenericHashtable<Node> currentNodeList = null;
 
             chars = word.ToArray<char>();
             iterator = null;
@@ -542,11 +542,11 @@ namespace TypeaheadSearch
                 {
                     if (!matchCase)
                     {
-                        iterator = currentNodeList.Where(p => Char.ToUpper(p.Letter) == Char.ToUpper(c)).FirstOrDefault();
+                        iterator = currentNodeList[Char.ToUpper(c)];
                     }
                     else
                     {
-                        iterator = currentNodeList.Where(p => p.Letter == c).FirstOrDefault();
+                        iterator = currentNodeList[c];
                     }
 
                     if (iterator == null)
