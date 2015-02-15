@@ -97,12 +97,10 @@ namespace TypeaheadSearch
             string formattedOutput = string.Join("\n", output.ToArray());
             Console.Write(formattedOutput);
 
-            /*
             using (StreamWriter sw = new StreamWriter("B:\\output.txt"))
             {
                 sw.Write(formattedOutput);
             }
-            */
         }
         #endregion
 
