@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -349,27 +350,42 @@ namespace TypeaheadSearch
 
     #region Data structure for quick finding
 
+    public class GenericHashtable<T> : Hashtable
+    {
+        public T this[object obj]
+        {
+            get
+            {
+                return (T)base[obj];
+            }
+            set
+            {
+                base[obj] = value;
+            }
+        }
+    }
+
     public class Node
     {
         public char Letter { get; set; }
         public Node Parent { get; set; }
-        public List<Node> Children { get; set; }
+        public GenericHashtable<Node> Children { get; set; }
         public List<Item> Documents { get; set; }
 
         public Node()
         {
-            this.Children = new List<Node>();
             this.Documents = new List<Item>();
+            this.Children = new GenericHashtable<Node>();
         }
 
     }
 
     public class QuickTree
     {
-        private List<Node> root;
+        private GenericHashtable<Node> root;
         public QuickTree()
         {
-            this.root = new List<Node>();
+            this.root = new GenericHashtable<Node>();
         }
 
         public bool Add(string token, Item document)
@@ -378,28 +394,28 @@ namespace TypeaheadSearch
             char[] chars = token.ToArray<char>();
             Node iterator = null;
             Node prevNode = null;
-            IList<Node> currentNodeList = this.root;
+            GenericHashtable<Node> currentNodeList = this.root;
 
             if (chars.Length > 0)
             {
                 //Iterate through the tree and get the last node
                 foreach (char c in chars)
                 {
-                    iterator = currentNodeList.Where(p => Char.ToUpper(p.Letter) == Char.ToUpper(c)).FirstOrDefault();
+                    iterator = currentNodeList[c];
                     if (iterator == null)
                     {
                         iterator = new Node();
                         iterator.Letter = Char.ToUpper(c);
                         iterator.Parent = prevNode;
 
-                        currentNodeList.Add(iterator);
+                        currentNodeList[c] = iterator;
                     }
                     prevNode = iterator;
                     currentNodeList = iterator.Children;
-                }
 
-                //Insert the document in the document list
-                iterator.Documents.Add(document);
+                    //Insert the document in the document list
+                    iterator.Documents.Add(document);
+                }
                 return true;
             }
 
