@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace TypeaheadSearch
 {
@@ -37,7 +38,14 @@ namespace TypeaheadSearch
         #region Start Program
         static void Main(string[] args)
         {
+            //new Program().Run(args);
+
+            //If debbuging, measure the execution time
+            var watch = Stopwatch.StartNew();
             new Program().Run(args);
+            watch.Stop();
+
+            Console.WriteLine("Execution time: {0}", watch.ElapsedMilliseconds);
         }
         #endregion
 
@@ -47,14 +55,15 @@ namespace TypeaheadSearch
             int numberOfInputs = 0;
             string tempLine = string.Empty;
             IList<string> inputs = new List<string>();
-            //StreamReader input = GetInputStream();
+            StreamReader input = GetInputStream();
+            //TextReader input = Console.In;
 
             //Start the items list to avoid nullpointers
             this.items = new Dictionary<string, Item>();
             this.tree = new QuickTree();
 
             //The first line from the reader is how many inputs will have
-            tempLine = Console.ReadLine();
+            tempLine = input.ReadLine();
             if (!Int32.TryParse(tempLine, out numberOfInputs))
             {
                 Console.WriteLine("Wrong input format!");
@@ -63,7 +72,7 @@ namespace TypeaheadSearch
 
             for (int i = 0; i < numberOfInputs; i++)
             {
-                inputs.Add(Console.ReadLine());
+                inputs.Add(input.ReadLine());
             }
 
             for (int i = 0; i < numberOfInputs; i++)
@@ -84,7 +93,7 @@ namespace TypeaheadSearch
 
         public void ParseAdd(string strLine)
         {
-            Regex addPattern = new Regex("(ADD)\\s+(user|topic|question|board)\\s+(\\w+)\\s+(\\d?\\.\\d+)\\s+(.*)");
+            Regex addPattern = new Regex("(ADD)\\s+(user|topic|question|board)\\s+([a-zA-Z!@#$%0-9]+)\\s+(\\d?\\.\\d+)\\s+(.*)");
             if (addPattern.IsMatch(strLine))
             {
                 MatchCollection results = addPattern.Matches(strLine);
@@ -180,7 +189,7 @@ namespace TypeaheadSearch
                 string id = m.Groups[1].Value;
 
                 //Verify if the item exists
-                if (items[id] != null)
+                if (items.ContainsKey(id))
                 {
                     Item i = items[id];
 
