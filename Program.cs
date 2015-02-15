@@ -1,4 +1,4 @@
-﻿#define NOTMYTEST
+﻿#define MYTEST
 
 using System;
 using System.Collections.Generic;
@@ -20,9 +20,13 @@ namespace TypeaheadSearch
         public string dataString { get; set; }
         public bool deleted { get; set; } //This is for lazy deletion
         public DateTime dtCreated;
+        public int ObjectIdCreation { get; set; }
+
+        public static int ActualCreationId = 1;
         public Item()
         {
             this.dtCreated = DateTime.Now;
+            this.ObjectIdCreation = Item.ActualCreationId++;
         }
     }
     #endregion
@@ -36,6 +40,7 @@ namespace TypeaheadSearch
         private QuickTree tree;
         private Dictionary<string, Item> items;
         List<string> output = new List<string>();
+        private int ObjectIdCounter = 1;
         #endregion
 
         #region Start Program
@@ -84,6 +89,11 @@ namespace TypeaheadSearch
 
             for (int i = 0; i < numberOfInputs; i++)
             {
+                if (i == 16904)
+                {
+
+                }
+
                 this.Parse(inputs[i]);
             }
             string formattedOutput = string.Join("\n", output.ToArray());
@@ -119,6 +129,7 @@ namespace TypeaheadSearch
                 i.id = match.Groups[3].Value;
                 i.score = decimal.Parse(match.Groups[4].Value);
                 i.dataString = Program.CleanString(match.Groups[5].Value.Trim());
+                i.ObjectIdCreation = ObjectIdCounter++;
 
                 this.Add(i);
             }
@@ -265,12 +276,11 @@ namespace TypeaheadSearch
             //Order and limit
             itemResults = itemResults
                 .OrderByDescending(item => item.score)
-                .ThenByDescending(item => item.id)
-                .Take(limit)
+                .ThenBy(item => item.ObjectIdCreation)
                 .ToList();
 
             StringBuilder sb = new StringBuilder();
-            foreach (string strId in itemResults.Select(item => item.id).ToList())
+            foreach (string strId in itemResults.Take(limit).Select(item => item.id).ToList())
             {
                 sb.Append(string.Format("{0} ", strId));
             }
@@ -282,10 +292,12 @@ namespace TypeaheadSearch
 
         public static string CleanString(string inputString)
         {
-            string tmp = inputString;
+            string tmp = inputString.ToLower();
 
             //Clean special characters
-            tmp = Regex.Replace(tmp, "[^\\w\\s]", "");
+            //tmp = Regex.Replace(tmp, "[^\\w\\s]", "");
+
+            tmp = tmp.Replace("\t", " ");
 
             //Remove double spaces
             tmp = Regex.Replace(tmp, "\\s{2,}", "");
@@ -465,11 +477,13 @@ namespace TypeaheadSearch
             if (tokens.Count == 1)
             {
                 return documentsList[0]
+                    .Distinct()
                     .ToList();
             }
             else if (tokens.Count == 2)
             {
                 return this.Intersection(documentsList[0], documentsList[1])
+                    .Distinct()
                     .ToList();
             }
             else
@@ -479,7 +493,7 @@ namespace TypeaheadSearch
                 {
                     tempList = tempList.Intersect(documentsList[i]).ToList();
                 }
-                return tempList;
+                return tempList.Distinct().ToList();
             }
         }
 
