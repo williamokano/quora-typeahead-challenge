@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define MYTEST
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,19 +35,22 @@ namespace TypeaheadSearch
         //private IList<Item> items;
         private QuickTree tree;
         private Dictionary<string, Item> items;
+        List<string> output = new List<string>();
         #endregion
 
         #region Start Program
         static void Main(string[] args)
         {
+#if !MYTEST
             new Program().Run(args);
+#else
+            ////////If debbuging, measure the execution time
+            var watch = Stopwatch.StartNew();
+            new Program().Run(args);
+            watch.Stop();
 
-            //If debbuging, measure the execution time
-            //var watch = Stopwatch.StartNew();
-            //new Program().Run(args);
-            //watch.Stop();
-
-            //Console.WriteLine("Execution time: {0}", watch.ElapsedMilliseconds);
+            Console.WriteLine("Execution time: {0}", watch.ElapsedMilliseconds);
+#endif
         }
         #endregion
 
@@ -55,9 +60,11 @@ namespace TypeaheadSearch
             int numberOfInputs = 0;
             string tempLine = string.Empty;
             IList<string> inputs = new List<string>();
-            //StreamReader input = GetInputStream();
+#if MYTEST
+            StreamReader input = GetInputStream();
+#else
             TextReader input = Console.In;
-
+#endif
             //Start the items list to avoid nullpointers
             this.items = new Dictionary<string, Item>();
             this.tree = new QuickTree();
@@ -79,7 +86,15 @@ namespace TypeaheadSearch
             {
                 this.Parse(inputs[i]);
             }
+            string formattedOutput = string.Join("\n", output.ToArray());
+            Console.Write(formattedOutput);
 
+#if MYTEST
+            using (StreamWriter sw = new StreamWriter("B:\\output.txt"))
+            {
+                sw.Write(formattedOutput);
+            }
+#endif
         }
         #endregion
 
@@ -93,7 +108,7 @@ namespace TypeaheadSearch
 
         public void ParseAdd(string strLine)
         {
-            Regex addPattern = new Regex("(ADD)\\s+(user|topic|question|board)\\s+([a-zA-Z!@#$%0-9]+)\\s+(\\d?\\.\\d+)\\s+(.*)");
+            Regex addPattern = new Regex("(ADD)\\s+(user|topic|question|board)\\s+(.+)\\s+(\\d+\\.\\d+|\\.\\d+|\\d+\\.|\\d+)\\s+(.*)");
             if (addPattern.IsMatch(strLine))
             {
                 MatchCollection results = addPattern.Matches(strLine);
@@ -103,7 +118,7 @@ namespace TypeaheadSearch
                 i.type = match.Groups[2].Value;
                 i.id = match.Groups[3].Value;
                 i.score = decimal.Parse(match.Groups[4].Value);
-                i.dataString = match.Groups[5].Value;
+                i.dataString = Program.CleanString(match.Groups[5].Value.Trim());
 
                 this.Add(i);
             }
@@ -123,7 +138,7 @@ namespace TypeaheadSearch
                 {
                     dataString = m.Groups[2].Value;
 
-                    ShowResults(dataString, limit);
+                    this.output.Add(ShowResults(dataString, limit));
                 }
             }
         }
@@ -134,7 +149,7 @@ namespace TypeaheadSearch
         /// <param name="strLine"></param>
         public void ParseWQuery(string strLine)
         {
-            Regex wQueryPatter = new Regex("\\bWQUERY\\b\\s+(\\d+)\\s+(\\d+)\\s+((?:[a-zA-Z0-9!@#$%]+:\\d+\\.\\d+\\s+)*)(.*)");
+            Regex wQueryPatter = new Regex("^WQUERY\\s+(\\d+)\\s+(\\d+)\\s+((?:[^\\s.]+\\:\\d*\\.?\\d*\\s+)*)(.*)");
             List<Tuple<string, decimal>> boosts = null;
             decimal tmpScoreBoost = 0.0M;
             int boosters = 0;
@@ -173,14 +188,14 @@ namespace TypeaheadSearch
                     dataString = m.Groups[4].Value;
 
                     //Show results
-                    ShowResults(dataString, limit, boosts);
+                    this.output.Add(ShowResults(dataString, limit, boosts));
                 }
             }
         }
 
         public void ParseDel(string strLine)
         {
-            Regex regDel = new Regex("^DEL\\s+(\\w+)");
+            Regex regDel = new Regex("^DEL\\s+(.+)");
             if (regDel.IsMatch(strLine))
             {
                 MatchCollection results = regDel.Matches(strLine);
@@ -203,7 +218,7 @@ namespace TypeaheadSearch
         }
 
         //public void ShowResults(MatchCollection results, IList<Tuple<string, decimal>> boosts = null)
-        public void ShowResults(string dataString, int limit = 0, IList<Tuple<string, decimal>> boosts = null)
+        public string ShowResults(string dataString, int limit = 0, IList<Tuple<string, decimal>> boosts = null)
         {
             IList<Item> itemResults = this.tree.Find(dataString).Select(item => new Item()
                 {
@@ -260,17 +275,39 @@ namespace TypeaheadSearch
                 sb.Append(string.Format("{0} ", strId));
             }
 
-            Console.WriteLine(sb.ToString().Trim());
+            //Console.WriteLine(sb.ToString().Trim());
+
+            return sb.ToString().Trim();
+        }
+
+        public static string CleanString(string inputString)
+        {
+            string tmp = inputString;
+
+            //Clean special characters
+            tmp = Regex.Replace(tmp, "[^\\w\\s]", "");
+
+            //Remove double spaces
+            tmp = Regex.Replace(tmp, "\\s{2,}", "");
+
+            return tmp;
         }
 
         public bool Add(Item item)
         {
             //Method to add to the data our great data structure
+            if (string.IsNullOrWhiteSpace(item.dataString))
+            {
+                return false;
+            }
+
+            string dataString = Program.CleanString(item.dataString);
+
             items.Add(item.id, item);
             try
             {
                 //items.Add(item);
-                string[] tokens = item.dataString.Split(' ');
+                string[] tokens = dataString.Split(' ');
 
                 foreach (string token in tokens)
                 {
@@ -325,6 +362,7 @@ namespace TypeaheadSearch
 
         public bool Add(string token, Item document)
         {
+            token = Program.CleanString(token);
             char[] chars = token.ToArray<char>();
             Node iterator = null;
             Node prevNode = null;
@@ -335,11 +373,11 @@ namespace TypeaheadSearch
                 //Iterate through the tree and get the last node
                 foreach (char c in chars)
                 {
-                    iterator = currentNodeList.Where(p => p.Letter == c).FirstOrDefault();
+                    iterator = currentNodeList.Where(p => Char.ToUpper(p.Letter) == Char.ToUpper(c)).FirstOrDefault();
                     if (iterator == null)
                     {
                         iterator = new Node();
-                        iterator.Letter = c;
+                        iterator.Letter = Char.ToUpper(c);
                         iterator.Parent = prevNode;
 
                         currentNodeList.Add(iterator);
@@ -369,6 +407,8 @@ namespace TypeaheadSearch
 
         public IList<Item> Find(string query, bool matchCase = false)
         {
+            query = Program.CleanString(query);
+
             //Get the query tokens
             List<string> tokens = query.Trim().Split(' ').ToList<string>();
 
