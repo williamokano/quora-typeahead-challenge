@@ -428,8 +428,20 @@ namespace TypeaheadSearch
             string[] tokens = document.dataString.Trim().Split(' ');
             foreach (string token in tokens)
             {
-                Node tmp = Navigate(token);
-                tmp.Documents.Remove(document);
+                foreach (char c in token.ToArray<char>())
+                {
+                    Node iterator = null;
+                    Node prevNode = null;
+                    GenericHashtable<Node> currentNodeList = this.root;
+
+                    iterator = currentNodeList[c];
+                    if (iterator == null)
+                        break;
+                    prevNode = iterator;
+                    currentNodeList = iterator.Children;
+
+                    iterator.Documents.Remove(document);
+                }
             }
         }
 
