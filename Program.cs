@@ -40,7 +40,7 @@ namespace TypeaheadSearch
         #region Attributes
 
         private QuickTree tree;
-        private GenericHashtable<Item> items;
+        private Hashtable items;
         List<string> output = new List<string>();
         private int ObjectIdCounter = 1;
         #endregion
@@ -69,7 +69,7 @@ namespace TypeaheadSearch
             //TextReader input = Console.In;
 
             //Start the items list to avoid nullpointers
-            this.items = new GenericHashtable<Item>();
+            this.items = new Hashtable();
             this.tree = new QuickTree();
 
             //The first line from the reader is how many inputs will have
@@ -215,7 +215,7 @@ namespace TypeaheadSearch
                 //Verify if the item exists
                 if (items[id] != null)
                 {
-                    Item i = items[id];
+                    Item i = (Item)items[id];
 
                     //Remove references from three
                     this.tree.Del(i);
@@ -348,42 +348,27 @@ namespace TypeaheadSearch
 
     #region Data structure for quick finding
 
-    public class GenericHashtable<T> : Hashtable
-    {
-        public T this[object obj]
-        {
-            get
-            {
-                return (T)base[obj];
-            }
-            set
-            {
-                base[obj] = value;
-            }
-        }
-    }
-
     public class Node
     {
         public char Letter { get; set; }
         public Node Parent { get; set; }
-        public GenericHashtable<Node> Children { get; set; }
+        public Hashtable Children { get; set; }
         public List<Item> Documents { get; set; }
 
         public Node()
         {
             this.Documents = new List<Item>();
-            this.Children = new GenericHashtable<Node>();
+            this.Children = new Hashtable();
         }
 
     }
 
     public class QuickTree
     {
-        private GenericHashtable<Node> root;
+        private Hashtable root;
         public QuickTree()
         {
-            this.root = new GenericHashtable<Node>();
+            this.root = new Hashtable();
         }
 
         public bool Add(string token, Item document)
@@ -392,14 +377,14 @@ namespace TypeaheadSearch
             char[] chars = token.ToArray<char>();
             Node iterator = null;
             Node prevNode = null;
-            GenericHashtable<Node> currentNodeList = this.root;
+            Hashtable currentNodeList = this.root;
 
             if (chars.Length > 0)
             {
                 //Iterate through the tree and get the last node
                 foreach (char c in chars)
                 {
-                    iterator = currentNodeList[c];
+                    iterator = (Node)currentNodeList[c];
                     if (iterator == null)
                     {
                         iterator = new Node();
@@ -428,11 +413,11 @@ namespace TypeaheadSearch
             {
                 Node iterator = null;
                 Node prevNode = null;
-                GenericHashtable<Node> currentNodeList = this.root;
+                Hashtable currentNodeList = this.root;
 
                 foreach (char c in token.ToArray<char>())
                 {
-                    iterator = currentNodeList[c];
+                    iterator = (Node)currentNodeList[c];
                     if (iterator == null)
                         break;
                     prevNode = iterator;
@@ -456,7 +441,7 @@ namespace TypeaheadSearch
             //????
             char[] chars = null;
             Node iterator = null;
-            GenericHashtable<Node> currentNodeList = null;
+            Hashtable currentNodeList = null;
 
             //Find the documents
             foreach (string token in tokens)
@@ -472,11 +457,11 @@ namespace TypeaheadSearch
                     {
                         if (!matchCase)
                         {
-                            iterator = currentNodeList[Char.ToLower(c)];
+                            iterator = (Node)currentNodeList[Char.ToLower(c)];
                         }
                         else
                         {
-                            iterator = currentNodeList[c];
+                            iterator = (Node)currentNodeList[c];
                         }
 
                         //When iterator is null then the word wasn't found
@@ -527,7 +512,7 @@ namespace TypeaheadSearch
         {
             char[] chars = null;
             Node iterator = null;
-            GenericHashtable<Node> currentNodeList = null;
+            Hashtable currentNodeList = null;
 
             chars = word.ToArray<char>();
             iterator = null;
@@ -540,11 +525,11 @@ namespace TypeaheadSearch
                 {
                     if (!matchCase)
                     {
-                        iterator = currentNodeList[Char.ToUpper(c)];
+                        iterator = (Node)currentNodeList[Char.ToUpper(c)];
                     }
                     else
                     {
-                        iterator = currentNodeList[c];
+                        iterator = (Node)currentNodeList[c];
                     }
 
                     if (iterator == null)
