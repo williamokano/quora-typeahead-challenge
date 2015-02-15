@@ -38,14 +38,14 @@ namespace TypeaheadSearch
         #region Start Program
         static void Main(string[] args)
         {
-            //new Program().Run(args);
+            new Program().Run(args);
 
             //If debbuging, measure the execution time
-            var watch = Stopwatch.StartNew();
-            new Program().Run(args);
-            watch.Stop();
+            //var watch = Stopwatch.StartNew();
+            //new Program().Run(args);
+            //watch.Stop();
 
-            Console.WriteLine("Execution time: {0}", watch.ElapsedMilliseconds);
+            //Console.WriteLine("Execution time: {0}", watch.ElapsedMilliseconds);
         }
         #endregion
 
@@ -55,8 +55,8 @@ namespace TypeaheadSearch
             int numberOfInputs = 0;
             string tempLine = string.Empty;
             IList<string> inputs = new List<string>();
-            StreamReader input = GetInputStream();
-            //TextReader input = Console.In;
+            //StreamReader input = GetInputStream();
+            TextReader input = Console.In;
 
             //Start the items list to avoid nullpointers
             this.items = new Dictionary<string, Item>();
