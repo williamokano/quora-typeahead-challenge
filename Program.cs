@@ -458,7 +458,7 @@ namespace TypeaheadSearch
             //????
             char[] chars = null;
             Node iterator = null;
-            IList<Node> currentNodeList = null;
+            GenericHashtable<Node> currentNodeList = null;
 
             //Find the documents
             foreach (string token in tokens)
@@ -474,11 +474,11 @@ namespace TypeaheadSearch
                     {
                         if (!matchCase)
                         {
-                            iterator = currentNodeList.Where(p => Char.ToUpper(p.Letter) == Char.ToUpper(c)).FirstOrDefault();
+                            iterator = currentNodeList[Char.ToUpper(c)];
                         }
                         else
                         {
-                            iterator = currentNodeList.Where(p => p.Letter == c).FirstOrDefault();
+                            iterator = currentNodeList[c];
                         }
 
                         //When iterator is null then the word wasn't found
@@ -491,7 +491,7 @@ namespace TypeaheadSearch
                     }
 
                     //The current node holds the node for the prefix
-                    documentsList.Add(this.GetItems(iterator));
+                    documentsList.Add(iterator.Documents);
                 }
             }
 
