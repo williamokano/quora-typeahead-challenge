@@ -525,26 +525,6 @@ namespace TypeaheadSearch
             }
         }
 
-        private List<Item> GetItems(Node _root)
-        {
-            List<Item> documents = new List<Item>();
-            foreach (Item document in _root.Documents)
-            {
-                documents.Add(document);
-            }
-
-            //If I have childrens, keep going
-            if (_root.Children.Count > 0)
-            {
-                foreach (Node n in _root.Children)
-                {
-                    documents.AddRange(GetItems(n));
-                }
-            }
-
-            return documents;
-        }
-
         private Node Navigate(string word, bool matchCase = false)
         {
             char[] chars = null;
