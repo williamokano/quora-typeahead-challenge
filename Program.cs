@@ -1,4 +1,4 @@
-﻿#define MYTEST
+﻿#define NOTMYTEST
 
 using System;
 using System.Collections.Generic;
