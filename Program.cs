@@ -1,6 +1,4 @@
-﻿#define MYTEST
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -20,14 +18,17 @@ namespace TypeaheadSearch
         public decimal score { get; set; }
         public string dataString { get; set; }
         public bool deleted { get; set; } //This is for lazy deletion
+        public decimal boost { get; set; }
         public DateTime dtCreated;
         public int ObjectIdCreation { get; set; }
 
         public static int ActualCreationId = 1;
-        public Item()
+        public Item(bool updateObjCreation = true)
         {
             this.dtCreated = DateTime.Now;
-            this.ObjectIdCreation = Item.ActualCreationId++;
+            this.boost = 0.0M;
+            if (updateObjCreation)
+                this.ObjectIdCreation = Item.ActualCreationId++;
         }
     }
     #endregion
@@ -37,9 +38,9 @@ namespace TypeaheadSearch
     {
 
         #region Attributes
-        //private IList<Item> items;
+
         private QuickTree tree;
-        private Dictionary<string, Item> items;
+        private GenericHashtable<Item> items;
         List<string> output = new List<string>();
         private int ObjectIdCounter = 1;
         #endregion
@@ -47,16 +48,14 @@ namespace TypeaheadSearch
         #region Start Program
         static void Main(string[] args)
         {
-#if !MYTEST
-            new Program().Run(args);
-#else
+            //new Program().Run(args);
+
             ////////If debbuging, measure the execution time
             var watch = Stopwatch.StartNew();
             new Program().Run(args);
             watch.Stop();
 
             Console.WriteLine("Execution time: {0}", watch.ElapsedMilliseconds);
-#endif
         }
         #endregion
 
@@ -66,13 +65,11 @@ namespace TypeaheadSearch
             int numberOfInputs = 0;
             string tempLine = string.Empty;
             IList<string> inputs = new List<string>();
-#if MYTEST
             StreamReader input = GetInputStream();
-#else
-            TextReader input = Console.In;
-#endif
+            //TextReader input = Console.In;
+
             //Start the items list to avoid nullpointers
-            this.items = new Dictionary<string, Item>();
+            this.items = new GenericHashtable<Item>();
             this.tree = new QuickTree();
 
             //The first line from the reader is how many inputs will have
@@ -100,12 +97,12 @@ namespace TypeaheadSearch
             string formattedOutput = string.Join("\n", output.ToArray());
             Console.Write(formattedOutput);
 
-#if MYTEST
+            /*
             using (StreamWriter sw = new StreamWriter("B:\\output.txt"))
             {
                 sw.Write(formattedOutput);
             }
-#endif
+            */
         }
         #endregion
 
@@ -213,17 +210,17 @@ namespace TypeaheadSearch
                 MatchCollection results = regDel.Matches(strLine);
                 Match m = results[0];
 
-                string id = m.Groups[1].Value;
+                string id = m.Groups[1].Value.Trim();
 
                 //Verify if the item exists
-                if (items.ContainsKey(id))
+                if (items[id] != null)
                 {
                     Item i = items[id];
 
                     //Remove references from three
                     this.tree.Del(i);
 
-                    //Remove references from dictionary
+                    //Remove references from hashtable
                     items.Remove(id);
                 }
             }
@@ -232,14 +229,14 @@ namespace TypeaheadSearch
         //public void ShowResults(MatchCollection results, IList<Tuple<string, decimal>> boosts = null)
         public string ShowResults(string dataString, int limit = 0, IList<Tuple<string, decimal>> boosts = null)
         {
-            IList<Item> itemResults = this.tree.Find(dataString).Select(item => new Item()
-                {
-                    dataString = item.dataString,
-                    deleted = item.deleted,
-                    id = item.id,
-                    score = item.score,
-                    type = item.type
-                }).ToList();
+            IList<Item> itemResults = this.tree.Find(dataString).ToList();
+
+            //Clear items boosts if is WQUERY
+
+            foreach (Item i in itemResults)
+            {
+                i.boost = 1.0M;
+            }
 
             //.Take(limit)
             //.ToList();
@@ -259,7 +256,7 @@ namespace TypeaheadSearch
                             case "board":
                                 foreach (Item i in itemResults.Where(item => item.type == boost.Item1))
                                 {
-                                    i.score *= boost.Item2;
+                                    i.boost *= boost.Item2;
                                 }
                                 break;
                             default:
@@ -276,12 +273,13 @@ namespace TypeaheadSearch
 
             //Order and limit
             itemResults = itemResults
-                .OrderByDescending(item => item.score)
-                .ThenBy(item => item.ObjectIdCreation)
+                .OrderByDescending(item => item.score * item.boost)
+                .ThenByDescending(item => item.ObjectIdCreation)
+                .Take(limit)
                 .ToList();
 
             StringBuilder sb = new StringBuilder();
-            foreach (string strId in itemResults.Take(limit).Select(item => item.id).ToList())
+            foreach (string strId in itemResults.Select(item => item.id).ToList())
             {
                 sb.Append(string.Format("{0} ", strId));
             }
@@ -428,12 +426,12 @@ namespace TypeaheadSearch
             string[] tokens = document.dataString.Trim().Split(' ');
             foreach (string token in tokens)
             {
+                Node iterator = null;
+                Node prevNode = null;
+                GenericHashtable<Node> currentNodeList = this.root;
+
                 foreach (char c in token.ToArray<char>())
                 {
-                    Node iterator = null;
-                    Node prevNode = null;
-                    GenericHashtable<Node> currentNodeList = this.root;
-
                     iterator = currentNodeList[c];
                     if (iterator == null)
                         break;
@@ -474,7 +472,7 @@ namespace TypeaheadSearch
                     {
                         if (!matchCase)
                         {
-                            iterator = currentNodeList[Char.ToUpper(c)];
+                            iterator = currentNodeList[Char.ToLower(c)];
                         }
                         else
                         {
