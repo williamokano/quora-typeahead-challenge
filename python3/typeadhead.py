@@ -8,6 +8,14 @@ class Item:
         self.score = score
         self.words = words
         self.internal_id = internal_id
+        
+    def boosted_score(self, boosts):
+        score = self.score
+        for boost in boosts:
+            if self.type == boost[0] or self.id == boost[0]:
+                score *= float(boost[1])
+        
+        return score
 
     def __str__(self):
         return "%s.%s" % (self.id , self.internal_id)
@@ -53,6 +61,24 @@ class Node:
             
             #Change the current node list to the next level of the trie
             currentNodeList = iterator.childrens
+    
+    def navigate(self, word):
+        currentNodeList = quickTree.childrens
+        iterator = None
+        
+        for letter in word:
+            if letter in currentNodeList:
+                iterator = currentNodeList[letter]
+                currentNodeList = iterator.childrens
+            else:
+                return None    
+        return iterator
+    
+    def get_ids(self, word):
+        node = self.navigate(word)
+        if node != None:
+            return node.items.copy() #return only a copy to don't change the original items
+        return set()
 
 class Solver:
     command_iter = 1
@@ -70,7 +96,17 @@ class Solver:
                 quickTree.delete(item, word.lower())
     
     def query(self, limit, words, boosts=[]):
-        print("QUERY")
+        ids = quickTree.get_ids(words[0])
+        if ids != None:
+            for word in words[1:]:
+                ids &= quickTree.get_ids(word)
+        
+        query_ids = sorted(ids, reverse=True, key=lambda id: (id.boosted_score(boosts), id.internal_id))
+        
+        if len(query_ids) > 0:
+            print('%s' % (' '.join([item.id for item in query_ids[0:limit]])))
+        else:
+            print('')
                 
 ##### MAIN #####
 sys.stdin = open('quora.txt', 'r')
@@ -88,3 +124,13 @@ for line in iter(sys.stdin.readline, ''):
         
     if line[0] == 'DEL':
         solver.delete(line[1])
+    
+    if line[0] == 'QUERY':
+        solver.query(int(line[1]), [word.lower() for word in line[2:]])
+        
+    if line[0] == 'WQUERY':
+        solver.query(
+                     int(line[1]),
+                     [word.lower() for word in line[3 + int(line[2]):]],
+                     [boost.split(':') for boost in line[3:3+int(line[2])]]
+                     )
