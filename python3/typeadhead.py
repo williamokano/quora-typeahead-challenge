@@ -57,7 +57,7 @@ class Node:
             iterator = currentNodeList[letter]
             
             #delete the item from the node list and then keep doing on the childrens
-            iterator.items.remove(item)
+            iterator.items.discard(item)
             
             #Change the current node list to the next level of the trie
             currentNodeList = iterator.childrens
@@ -109,7 +109,7 @@ class Solver:
             print('')
                 
 ##### MAIN #####
-sys.stdin = open('quora.txt', 'r')
+###sys.stdin = open('quora.txt', 'r')
 
 quickTree = Node() #Store the nodes for all words
 items = {} #Store all items

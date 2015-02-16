@@ -1,16 +1,19 @@
-15
-ADD user u1 1.0 Adam D’Angelo
-ADD user u2 1.0 Adam Black
-ADD topic t1 0.8 Adam D’Angelo
-ADD question q1 0.5 What does Adam D’Angelo do at Quora?
-ADD question q2 0.5 How did Adam D’Angelo learn programming?
-QUERY 10 Adam
-QUERY 10 Adam D’A
-QUERY 10 Adam Cheever
-QUERY 10 LEARN how
-QUERY 1 lear H
-QUERY 0 lea
-WQUERY 10 0 Adam D’A
-WQUERY 2 1 topic:9.99 Adam D’A
-DEL u2
-QUERY 2 Adam
+18
+ADD user 2 81 on y swm add y ik uz 
+ADD question 3 97 ebt ue i ua so sufi iqc k 
+WQUERY 16 2 topic:63 2:80 i iq
+ADD topic 5 71 dho kbf srhd q yvt sfd nlj ba 
+ADD question 6 97 rlb gtq ya 
+DEL 3
+ADD topic 8 62 vehj qw q e p n imi cxce ydlm 
+WQUERY 19 3 user:31 topic:66 question:65 so yvt
+ADD question 10 90 
+ADD user 11 6 h 
+ADD topic 12 18 cmlv abcj 
+ADD question 13 3 quw pad gqs nj boin fn gpn fwn oik 
+ADD topic 14 42 sg i xn n 
+WQUERY 19 3 topic:87 2:62 3:93 b p
+ADD topic 16 25 thg l gn pf 
+WQUERY 3 5 6:5 5:92 8:56 2:41 3:57 s q
+DEL 10
+QUERY 9 ve l
