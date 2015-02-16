@@ -18,9 +18,11 @@ class Node:
         self.items = set()
 
     def add(self, item):
+        items[item.id] = item #add's the item in the general list
+        
         for word in item.words:
             self.internal_add(item, word)
-
+            
     def internal_add(self, item, word):
         currentNodeList = quickTree.childrens
         iterator = None
@@ -33,8 +35,24 @@ class Node:
 
             iterator.items.add(item)
             currentNodeList[letter] = iterator
-
-
+            
+            currentNodeList = iterator.childrens
+    
+    def delete(self, item, word):
+        currentNodeList = quickTree.childrens
+        iterator = None
+        
+        for letter in word:
+            if not letter in currentNodeList:
+                print("ERROR DELETING %s" % (word))
+            
+            iterator = currentNodeList[letter]
+            
+            #delete the item from the node list and then keep doing on the childrens
+            iterator.items.remove(item)
+            
+            #Change the current node list to the next level of the trie
+            currentNodeList = iterator.childrens
 
 class Solver:
     command_iter = 1
@@ -43,7 +61,18 @@ class Solver:
         item = Item(type, id, score, words, Solver.command_iter)
         Solver.command_iter += 1
         quickTree.add(item)
-
+        
+    def delete(self, id):
+        if id in items:
+            item = items[id]
+            
+            for word in item.words:
+                quickTree.delete(item, word.lower())
+    
+    def query(self, limit, words, boosts=[]):
+        print("QUERY")
+                
+##### MAIN #####
 sys.stdin = open('quora.txt', 'r')
 
 quickTree = Node() #Store the nodes for all words
@@ -56,5 +85,6 @@ for line in iter(sys.stdin.readline, ''):
     
     if line[0] == 'ADD':
         solver.add(line[1], line[2], float(line[3]), [word.lower() for word in line[4:]])
-
-print([a in quickTree.childrens['a'].items])
+        
+    if line[0] == 'DEL':
+        solver.delete(line[1])
